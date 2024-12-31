@@ -1,0 +1,17 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Python: Module",
+            "type": "python",
+            "request": "launch",
+            "module": "create_neo4j_python_app.create_app",
+            // "args": "--api-client-id=52yRb8NLTGWPhvDyuVL1EcFLTSx5me0c --api-client-secret=OeLB6WGkWSIUUdqE6HrymEgq1DFPG67uZe7gHjr8QH18JPDlqdFpP_zKux0cLJhl --instance-name=cool-instance",
+            "args": "--import-model=test/example_model.json",
+            "justMyCode": true
+        },
+    ]
+}
