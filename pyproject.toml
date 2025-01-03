@@ -20,5 +20,16 @@ dependencies = [
   "inflect"
 ]
 
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "pytest-mock",
+    "requests-mock",
+    "pre-commit",
+    "black",
+    "isort",
+    "mypy"
+]
+
 [project.scripts]
 create-neo4j-python-app = "create_neo4j_python_app.create_app:main"

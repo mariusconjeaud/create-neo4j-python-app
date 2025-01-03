@@ -33,7 +33,7 @@
         "nodeLabels": [
           {
             "$id": "nl:1",
-            "token": "NodeA",
+            "token": "FirstLabel",
             "properties": [
               {
                 "$id": "p:1",
@@ -79,7 +79,7 @@
           },
           {
             "$id": "nl:2",
-            "token": "NodeB",
+            "token": "SecondLabel",
             "properties": []
           },
           {
@@ -190,7 +190,7 @@
         "constraints": [
           {
             "$id": "c:1",
-            "name": "uid_NodeA_uniq",
+            "name": "uid_FirstLabel_uniq",
             "constraintType": "uniqueness",
             "entityType": "node",
             "nodeLabel": {
@@ -220,7 +220,7 @@
         "indexes": [
           {
             "$id": "i:1",
-            "name": "uid_NodeA_uniq",
+            "name": "uid_FirstLabel_uniq",
             "indexType": "default",
             "entityType": "node",
             "nodeLabel": {
@@ -248,7 +248,7 @@
           },
           {
             "$id": "i:3",
-            "name": "dob_NodeA",
+            "name": "dob_FirstLabel",
             "indexType": "default",
             "entityType": "node",
             "nodeLabel": {

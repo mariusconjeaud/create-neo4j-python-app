@@ -7,6 +7,7 @@ import re
 import time
 from requests.auth import HTTPBasicAuth
 import requests
+from typing import Any
 
 ACCESS_TOKEN = None
 TENANT_ID = None
@@ -139,6 +140,7 @@ def create_folder_structure():
         from neomodel import config
         import os
         from dotenv import load_dotenv
+        from routers import *
 
         load_dotenv()
 
@@ -172,10 +174,10 @@ def create_folder_structure():
 
     # create routers structure
     with open(f"{ROUTERS_DIRECTORY}/__init__.py", "w") as f:
-        f.write("# Package init")
+        f.write("# Routers import\n")
 
 
-def generate_models_from_workspace_json(model_path: str):
+def generate_models_from_workspace_json(model_path: str) -> list[dict[str, Any]]:
     with open(model_path, "r") as f:
         data = json.load(f)
 
@@ -393,20 +395,25 @@ def generate_models_from_workspace_json(model_path: str):
         model_code.append("        return props")
         model_code.append("")
 
-    # TODO : Uncomment this
-    # with open("models.py", "w") as f:
-    #     f.write("\n".join(model_code))
+    with open("models.py", "w") as f:
+        f.write("\n".join(model_code))
 
     print("Successfully generated models from JSON")
     print(f"Models are saved in {MODELS_FILE}")
     return node_labels
 
 
-def generate_crud_endpoints(node_labels: list[str]):
-    # TODO : node_labels here is actually a list of dict
-    for class_name in node_labels:
-        filename = f"routers/{class_name.lower()}.py"
-        plural = p.plural(class_name.lower())
+def generate_crud_endpoints(node_labels: list[dict[str, Any]]):
+    routers = []
+    for el in node_labels:
+        class_name = el["token"]
+
+        # Convert class name to lowercase with underscores (e.g. MyLabel -> my_label)
+        underscored = re.sub(r"(?<!^)(?=[A-Z])", "_", class_name).lower()
+        # Then pluralize the underscored name
+        plural = p.plural(underscored)
+        filename = f"{ROUTERS_DIRECTORY}/{underscored}.py"
+        routers.append(underscored)
 
         router_code = [
             "from fastapi import APIRouter, HTTPException",
@@ -417,18 +424,18 @@ def generate_crud_endpoints(node_labels: list[str]):
             "",
             "# Create",
             "@router.post('/')",
-            f"def create_{class_name.lower()}(payload: dict):",
+            f"def create_{underscored}(payload: dict):",
             f"    obj = {class_name}(**payload).save()",
             "    return obj",
             "",
             "# Read all",
             "@router.get('/')",
             f"def list_{plural}():",
-            f"    return [{class_name.lower()}.to_dict() for {class_name.lower()} in {class_name}.nodes.all()]",
+            f"    return [{underscored}.to_dict() for {underscored} in {class_name}.nodes.all()]",
             "",
             "# Read one",
             f"@router.get('/{{uid}}')",
-            f"def get_{class_name.lower()}(uid: str):",
+            f"def get_{underscored}(uid: str):",
             f"    obj = {class_name}.nodes.get_or_none(uid=uid)",
             "    if not obj:",
             "        raise HTTPException(status_code=404, detail='Not found')",
@@ -436,7 +443,7 @@ def generate_crud_endpoints(node_labels: list[str]):
             "",
             "# Update",
             f"@router.put('/{{uid}}')",
-            f"def update_{class_name.lower()}(uid: str, payload: dict):",
+            f"def update_{underscored}(uid: str, payload: dict):",
             f"    obj = {class_name}.nodes.get_or_none(uid=uid)",
             "    if not obj:",
             "        raise HTTPException(status_code=404, detail='Not found')",
@@ -447,7 +454,7 @@ def generate_crud_endpoints(node_labels: list[str]):
             "",
             "# Delete",
             f"@router.delete('/{{uid}}')",
-            f"def delete_{class_name.lower()}(uid: str):",
+            f"def delete_{underscored}(uid: str):",
             f"    obj = {class_name}.nodes.get_or_none(uid=uid)",
             "    if not obj:",
             "        raise HTTPException(status_code=404, detail='Not found')",
@@ -457,6 +464,16 @@ def generate_crud_endpoints(node_labels: list[str]):
 
         with open(filename, "w") as f:
             f.write("\n".join(router_code))
+
+    with open(f"{ROUTERS_DIRECTORY}/__init__.py", "w") as f:
+        for router_name in routers:
+            f.write(
+                f"from routers.{router_name} import router as {router_name}_router\n"
+            )
+
+    with open(MAIN_FILE, "w") as f:
+        for router_name in routers:
+            f.write(f"app.include_router(routers.{router_name}_router)\n")
 
 
 def main():
@@ -483,8 +500,7 @@ def main():
         )
         if INSTANCE_ID is None:
             return
-        # TODO : Uncomment this
-        # create_folder_structure()
+        create_folder_structure()
         wait_for_instance_ready()
         print("Your Neo4j Aura instance has been created!")
         print(
