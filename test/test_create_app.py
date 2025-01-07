@@ -126,10 +126,10 @@ def test_create_folder_structure(mock_file, mock_makedirs):
 
 def test_generate_models_from_workspace_json():
     """Test generate_models_from_workspace_json function."""
-    with open("test/example_model.json") as f:
+    with open("test/example_model.json", encoding="utf-8") as f:
         json_data = f.read()
 
-    with open("test/expected_models_py") as f:
+    with open("test/expected_models_py", encoding="utf-8") as f:
         expected_models_py = f.read()
 
     with patch("builtins.open", new_callable=mock_open) as mock_file:
@@ -150,7 +150,7 @@ def test_generate_models_from_workspace_json():
 
 def test_generate_crud_endpoints():
     """Test generate_crud_endpoints function."""
-    with open("test/node_labels.json") as f:
+    with open("test/node_labels.json", encoding="utf-8") as f:
         node_labels = json.load(f)
 
     with patch("builtins.open", new_callable=mock_open) as mock_file:
