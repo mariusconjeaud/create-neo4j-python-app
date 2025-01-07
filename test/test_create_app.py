@@ -1,13 +1,24 @@
-import pytest
-from unittest.mock import patch, mock_open
+"""
+This file contains tests for the create_app.py file.
+"""
+
 import json
+from unittest.mock import mock_open, patch
+
+import pytest
+
+from create_neo4j_python_app.create_app import (
+    create_folder_structure,
+    create_neo4j_aura_instance,
+    generate_crud_endpoints,
+    generate_models_from_workspace_json,
+    get_oauth_token,
+)
 
 
-# Test get_oauth_token function
 @pytest.mark.usefixtures("requests_mock")
 def test_get_oauth_token_success(requests_mock):
-    from create_neo4j_python_app.create_app import get_oauth_token
-
+    """Test get_oauth_token function with successful response."""
     requests_mock.post(
         "https://api.neo4j.io/oauth/token",
         json={"access_token": "test_token"},
@@ -21,11 +32,9 @@ def test_get_oauth_token_success(requests_mock):
     assert ACCESS_TOKEN == "test_token"
 
 
-# Test create_neo4j_aura_instance function
 @pytest.mark.usefixtures("requests_mock")
 def test_create_neo4j_aura_instance(requests_mock):
-    from create_neo4j_python_app.create_app import create_neo4j_aura_instance
-
+    """Test create_neo4j_aura_instance function with successful response."""
     requests_mock.post(
         "https://api.neo4j.io/oauth/token",
         json={"access_token": "test_token"},
@@ -53,11 +62,11 @@ def test_create_neo4j_aura_instance(requests_mock):
     create_neo4j_aura_instance("client_id", "client_secret")
 
     from create_neo4j_python_app.create_app import (
-        TENANT_ID,
+        INSTANCE_ID,
+        INSTANCE_PASSWORD,
         INSTANCE_URI,
         INSTANCE_USERNAME,
-        INSTANCE_PASSWORD,
-        INSTANCE_ID,
+        TENANT_ID,
     )
 
     # Asserts to verify proper assignment
@@ -68,12 +77,10 @@ def test_create_neo4j_aura_instance(requests_mock):
     assert INSTANCE_ID == "instance-id-123"
 
 
-# Test create_folder_structure function
 @patch("os.makedirs")
 @patch("builtins.open", new_callable=mock_open)
 def test_create_folder_structure(mock_file, mock_makedirs):
-    from create_neo4j_python_app.create_app import create_folder_structure
-
+    """Test create_folder_structure function."""
     create_folder_structure()
 
     # Check if directory creation was attempted
@@ -118,8 +125,7 @@ def test_create_folder_structure(mock_file, mock_makedirs):
 
 
 def test_generate_models_from_workspace_json():
-    from create_neo4j_python_app.create_app import generate_models_from_workspace_json
-
+    """Test generate_models_from_workspace_json function."""
     with open("test/example_model.json") as f:
         json_data = f.read()
 
@@ -143,8 +149,7 @@ def test_generate_models_from_workspace_json():
 
 
 def test_generate_crud_endpoints():
-    from create_neo4j_python_app.create_app import generate_crud_endpoints
-
+    """Test generate_crud_endpoints function."""
     with open("test/node_labels.json") as f:
         node_labels = json.load(f)
 

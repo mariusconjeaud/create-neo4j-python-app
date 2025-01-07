@@ -5,3 +5,4 @@ pre-commit
 black
 isort
 mypy
+types-requests

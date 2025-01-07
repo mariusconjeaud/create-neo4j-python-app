@@ -1,13 +1,18 @@
-# create_app.py
+"""
+This script is used to create a new Neo4j Aura Free instance
+and scaffold a Python API project using neomodel and FastAPI.
+"""
+
 import argparse
-import inflect
 import json
 import os
 import re
 import time
-from requests.auth import HTTPBasicAuth
-import requests
 from typing import Any
+
+import inflect
+import requests
+from requests.auth import HTTPBasicAuth
 
 ACCESS_TOKEN = None
 TENANT_ID = None
@@ -28,6 +33,24 @@ p = inflect.engine()
 
 
 def get_oauth_token(client_id: str, client_secret: str) -> None:
+    """
+    Retrieves an OAuth token from Neo4j's authentication service using client credentials.
+
+    This function makes a POST request to Neo4j's OAuth endpoint to obtain an access token
+    using the client credentials authentication flow. Upon successful authentication,
+    it stores the access token in a global variable ACCESS_TOKEN.
+
+    Args:
+        client_id (str): The client ID for authentication
+        client_secret (str): The client secret for authentication
+
+    Returns:
+        None
+
+    Side Effects:
+        - Sets global ACCESS_TOKEN variable when authentication is successful
+        - Prints success/error messages to standard output
+    """
     global ACCESS_TOKEN
     url = "https://api.neo4j.io/oauth/token"
 
@@ -52,6 +75,34 @@ def get_oauth_token(client_id: str, client_secret: str) -> None:
 
 
 def create_neo4j_aura_instance(client_id: str, client_secret: str) -> None:
+    """Create a Neo4j Aura instance using the Neo4j Aura API.
+
+    This function handles the creation of a Neo4j Aura instance by making API calls to Neo4j's
+    Aura service. It sets up global variables for connection details and creates a free-tier
+    database instance in the specified region.
+
+    Args:
+        client_id (str): The OAuth client ID for authentication with Neo4j Aura API
+        client_secret (str): The OAuth client secret for authentication with Neo4j Aura API
+
+    Returns:
+        None
+
+    Global Variables Modified:
+        ACCESS_TOKEN: The OAuth access token for API requests
+        TENANT_ID: The ID of the tenant in Neo4j Aura
+        INSTANCE_ID: The ID of the created database instance
+        INSTANCE_NAME: The name of the database instance
+        INSTANCE_URI: The connection URI for the database
+        INSTANCE_USERNAME: The username for database authentication
+        INSTANCE_PASSWORD: The password for database authentication
+
+    Notes:
+        - Creates a free-tier database ('free-db') with 1GB memory
+        - Deploys on Google Cloud Platform in europe-west1 region
+        - Uses Neo4j version 5
+        - Instance creation may take several minutes to complete
+    """
     global ACCESS_TOKEN
     global TENANT_ID
     global INSTANCE_ID
@@ -105,7 +156,16 @@ def create_neo4j_aura_instance(client_id: str, client_secret: str) -> None:
         print("Failed to create instance:", response.text)
 
 
-def wait_for_instance_ready():
+def wait_for_instance_ready() -> None:
+    """Wait for Neo4j AuraDB instance to be in ready state.
+
+    Makes HTTP GET requests to Neo4j AuraDB API to check instance status.
+    Will retry up to 30 times with 20 second intervals between attempts.
+    Breaks loop when instance is either 'running' or 'failed' and prints the status.
+
+    Returns:
+        None
+    """
     url = f"https://api.neo4j.io/v1/instances/{INSTANCE_ID}"
     headers = {"Accept": "application/json", "Authorization": f"Bearer {ACCESS_TOKEN}"}
 
@@ -127,11 +187,33 @@ def wait_for_instance_ready():
         time.sleep(20)
 
 
-def create_folder_structure():
+def create_folder_structure() -> None:
+    """Creates the initial folder structure and files for a FastAPI application with neomodel integration.
+
+    This function sets up the following structure:
+    - Root directory (app/)
+        - Models directory (for Neo4j models) (models/)
+        - Routers directory (for FastAPI routers) (routers/)
+        - Main application file (main.py)
+    - Requirements file (requirements.txt) with necessary dependencies
+    - Environment files (.env and .env.example)
+    - Git ignore file (.gitignore)
+
+    The function also initializes basic content in:
+    - main.py with FastAPI and Neo4j configuration
+    - Empty model and router initialization files
+    - Environment files with Neo4j connection details
+
+    Note:
+        All directories are created with exist_ok=True to prevent errors if they already exist
+
+    Returns:
+        None
+    """
     os.makedirs(ROOT_DIRECTORY, exist_ok=True)
     os.makedirs(MODELS_DIRECTORY, exist_ok=True)
     os.makedirs(ROUTERS_DIRECTORY, exist_ok=True)
-    with open("requirements.txt", "w") as f:
+    with open("requirements.txt", "w", encoding="utf-8") as f:
         f.write("fastapi\nuvicorn[standard]\nneomodel\nrequests\npython-dotenv\n")
 
     # Create main.py
@@ -150,35 +232,73 @@ def create_folder_structure():
 
         # Include routers dynamically later
         """
-    with open(MAIN_FILE, "w") as f:
+    with open(MAIN_FILE, "w", encoding="utf-8") as f:
         f.write(main_content)
 
     # Create .gitignore
-    with open(".gitignore", "w") as f:
+    with open(".gitignore", "w", encoding="utf-8") as f:
         f.write("venv\n__pycache__\n*.pyc\n*.pyo\n*.pyd\n*.log\n.DS_Store\n.env\n")
     # Create secret .env and .env.example
-    with open(".env", "w") as f:
+    with open(".env", "w", encoding="utf-8") as f:
         f.write(
             f"NEO4J_URI={INSTANCE_URI}\nNEO4J_USERNAME={INSTANCE_USERNAME}\nNEO4J_PASSWORD={INSTANCE_PASSWORD}\n"
         )
-    with open(".env.example", "w") as f:
+    with open(".env.example", "w", encoding="utf-8") as f:
         f.write(
             "NEO4J_URI=<your-neo4j-uri>\nNEO4J_USERNAME=<your-neo4j-username>\nNEO4J_PASSWORD=<your-neo4j-password>\n"
         )
 
     # create models structure
-    with open(f"{MODELS_DIRECTORY}/__init__.py", "w") as f:
+    with open(f"{MODELS_DIRECTORY}/__init__.py", "w", encoding="utf-8") as f:
         f.write("# Package init")
-    with open(MODELS_FILE, "w") as f:
+    with open(MODELS_FILE, "w", encoding="utf-8") as f:
         f.write("# Models will be generated here\n")
 
     # create routers structure
-    with open(f"{ROUTERS_DIRECTORY}/__init__.py", "w") as f:
+    with open(f"{ROUTERS_DIRECTORY}/__init__.py", "w", encoding="utf-8") as f:
         f.write("# Routers import\n")
 
 
 def generate_models_from_workspace_json(model_path: str) -> list[dict[str, Any]]:
-    with open(model_path, "r") as f:
+    """Convert a workspace JSON schema into Python Neomodel classes.
+
+    This function takes a JSON schema file path and generates corresponding Python classes
+    for Neo4j nodes and relationships using the neomodel ORM framework.
+
+    Args:
+        model_path (str): Path to the workspace export JSON schema file
+
+    Returns:
+        list[dict[str, Any]]: List of node label definitions from the schema
+
+    The function performs the following:
+    1. Reads and parses the JSON schema file
+    2. Extracts node labels, relationship types, constraints and indexes
+    3. Maps property types to Neomodel property classes
+    4. Generates StructuredRel classes for relationships with properties
+    5. Generates StructuredNode classes with:
+       - Properties (with uniqueness/index constraints)
+       - Relationships to other nodes
+       - to_dict() method for serialization
+    6. Writes generated code to models.py
+
+    The generated classes follow these conventions:
+    - Node class names are PascalCase versions of schema labels
+    - Relationship classes are named [RelationName]Rel
+    - Properties maintain their original names from the schema
+    - Relationships are lowercase versions of schema relation types
+
+    Example output file structure:
+        from neomodel import ...
+
+        class SomeRelation(StructuredRel):
+            prop = StringProperty()
+
+        class NodeA(StructuredNode):
+            name = StringProperty(unique_index=True)
+            some_relation = RelationshipTo('NodeB', 'SOME_RELATION')
+    """
+    with open(model_path, "r", encoding="utf-8") as f:
         data = json.load(f)
 
     graph_schema = data["dataModel"]["graphSchemaRepresentation"]["graphSchema"]
@@ -194,15 +314,12 @@ def generate_models_from_workspace_json(model_path: str) -> list[dict[str, Any]]
     constraints = graph_schema.get("constraints", [])
     indexes = graph_schema.get("indexes", [])
 
-    # Map $id to node label, relationship type, node object, and rel object
-    node_label_by_id = {nl["$id"]: nl for nl in node_labels}
+    # Map $id to relationship type
     rel_type_by_id = {rt["$id"]: rt for rt in rel_types}
-    node_object_by_id = {no["$id"]: no for no in node_objects}
-    rel_object_by_id = {ro["$id"]: ro for ro in rel_objects}
 
     # Extract uniqueness constraints
     # node_label_id -> set of property_ids that are unique
-    unique_props = {}
+    unique_props: dict[str, set] = {}
     for c in constraints:
         if c["constraintType"] == "uniqueness" and c["entityType"] == "node":
             nl_id = c["nodeLabel"]["$ref"].strip("#")
@@ -211,7 +328,7 @@ def generate_models_from_workspace_json(model_path: str) -> list[dict[str, Any]]
 
     # Extract indexed properties
     # node_label_id -> set of property_ids that are indexed
-    indexed_props = {}
+    indexed_props: dict[str, set] = {}
     for i in indexes:
         if i["entityType"] == "node":
             nl_id = i["nodeLabel"]["$ref"].strip("#")
@@ -252,9 +369,9 @@ def generate_models_from_workspace_json(model_path: str) -> list[dict[str, Any]]
     # Handle relationships: we need to create relationship classes if they have properties.
     # Also map from a node label to its outgoing relationships.
     # relationships_by_node: {node_label_id: [(rel_token, target_label_id, rel_properties_classname)]}
-    relationships_by_node = {}
+    relationships_by_node: dict[str, list[tuple]] = {}
     # We'll also store relationship types that have properties to generate StructuredRel classes.
-    rel_types_with_props = {}
+    rel_types_with_props: dict[str, tuple] = {}
     for ro in rel_objects:
         rt_id = ro["type"]["$ref"].strip("#")
         from_n = ro["from"]["$ref"].strip("#")
@@ -395,7 +512,7 @@ def generate_models_from_workspace_json(model_path: str) -> list[dict[str, Any]]
         model_code.append("        return props")
         model_code.append("")
 
-    with open("models.py", "w") as f:
+    with open("models.py", "w", encoding="utf-8") as f:
         f.write("\n".join(model_code))
 
     print("Successfully generated models from JSON")
@@ -403,7 +520,38 @@ def generate_models_from_workspace_json(model_path: str) -> list[dict[str, Any]]
     return node_labels
 
 
-def generate_crud_endpoints(node_labels: list[dict[str, Any]]):
+def generate_crud_endpoints(node_labels: list[dict[str, Any]]) -> None:
+    """
+    Generates CRUD (Create, Read, Update, Delete) endpoint files for each node label.
+
+    This function creates separate router files for each node label with standard CRUD operations
+    using FastAPI. For each node label, it generates endpoints for:
+    - Creating new nodes
+    - Reading all nodes
+    - Reading a single node by UID
+    - Updating (PUT) a node by UID
+    - Deleting a node by UID
+
+    The function also updates the main router initialization files.
+
+    Args:
+        node_labels (list[dict[str, Any]]): A list of dictionaries containing node label information.
+                                           Each dictionary must have a "token" key with the class name.
+
+    Generated Files:
+        - Individual router files in the ROUTERS_DIRECTORY
+        - Updated __init__.py in ROUTERS_DIRECTORY with router imports
+        - Updated main.py with router inclusions
+
+    Example:
+        For a node label {"token": "Person"}, generates:
+        - routers/person.py with CRUD endpoints at /people/
+        - Updates routers/__init__.py and main.py with router registration
+
+    Note:
+        Class names are automatically converted to lowercase with underscores and pluralized
+        for endpoint URLs (e.g., "PersonAddress" becomes "/person_addresses/").
+    """
     routers = []
     for el in node_labels:
         class_name = el["token"]
@@ -434,7 +582,7 @@ def generate_crud_endpoints(node_labels: list[dict[str, Any]]):
             f"    return [{underscored}.to_dict() for {underscored} in {class_name}.nodes.all()]",
             "",
             "# Read one",
-            f"@router.get('/{{uid}}')",
+            "@router.get('/{uid}')",
             f"def get_{underscored}(uid: str):",
             f"    obj = {class_name}.nodes.get_or_none(uid=uid)",
             "    if not obj:",
@@ -442,7 +590,7 @@ def generate_crud_endpoints(node_labels: list[dict[str, Any]]):
             "    return obj.to_dict()",
             "",
             "# Update",
-            f"@router.put('/{{uid}}')",
+            "@router.put('/{uid}')",
             f"def update_{underscored}(uid: str, payload: dict):",
             f"    obj = {class_name}.nodes.get_or_none(uid=uid)",
             "    if not obj:",
@@ -453,7 +601,7 @@ def generate_crud_endpoints(node_labels: list[dict[str, Any]]):
             "    return obj.to_dict()",
             "",
             "# Delete",
-            f"@router.delete('/{{uid}}')",
+            "@router.delete('/{uid}')",
             f"def delete_{underscored}(uid: str):",
             f"    obj = {class_name}.nodes.get_or_none(uid=uid)",
             "    if not obj:",
@@ -462,32 +610,63 @@ def generate_crud_endpoints(node_labels: list[dict[str, Any]]):
             "    return {'detail': 'Deleted'}",
         ]
 
-        with open(filename, "w") as f:
+        with open(filename, "w", encoding="utf-8") as f:
             f.write("\n".join(router_code))
 
-    with open(f"{ROUTERS_DIRECTORY}/__init__.py", "w") as f:
+    with open(f"{ROUTERS_DIRECTORY}/__init__.py", "w", encoding="utf-8") as f:
         for router_name in routers:
             f.write(
                 f"from routers.{router_name} import router as {router_name}_router\n"
             )
 
-    with open(MAIN_FILE, "w") as f:
+    with open(MAIN_FILE, "w", encoding="utf-8") as f:
         for router_name in routers:
             f.write(f"app.include_router(routers.{router_name}_router)\n")
 
 
 def main():
+    """
+    Setup Neo4j Aura Free instance and scaffold a Python project.
+
+    This function handles two main workflows:
+    1. Creating a new Neo4j Aura instance and scaffolding project directories
+    2. Generating data models from an imported Neo4j Workspace JSON file
+
+    Command line arguments:
+        -i, --api-client-id: Aura API client ID for authentication
+        -s, --api-client-secret: Aura API client secret for authentication
+        -n, --instance-name: Name for the Neo4j Aura instance (defaults to "my-instance")
+        -m, --import-model: Path to the model.json file exported from Neo4j Workspace
+
+    The function either:
+    - Creates a new Aura instance using provided credentials and sets up project structure
+    - Generates Python models and CRUD endpoints from an imported Workspace JSON model
+
+    Global variables modified:
+        INSTANCE_ID: ID of the created Aura instance
+        INSTANCE_NAME: Name of the created Aura instance
+
+    Returns:
+        None
+    """
     global INSTANCE_ID
     global INSTANCE_NAME
     parser = argparse.ArgumentParser(
         description="Setup Neo4j Aura Free instance and scaffold project."
     )
-    parser.add_argument("--api-client-id", required=False, help="Aura API ID")
-    parser.add_argument("--api-client-secret", required=False, help="Aura API Key")
+    parser.add_argument("-i", "--api-client-id", required=False, help="Aura API ID")
     parser.add_argument(
-        "--instance-name", required=False, help="Name of the Aura instance to create"
+        "-s", "--api-client-secret", required=False, help="Aura API Key"
     )
-    parser.add_argument("--import-model", required=False, help="Path to model.json")
+    parser.add_argument(
+        "-n",
+        "--instance-name",
+        required=False,
+        help="Name of the Aura instance to create",
+    )
+    parser.add_argument(
+        "-m", "--import-model", required=False, help="Path to model.json"
+    )
 
     args = parser.parse_args()
 
@@ -514,8 +693,6 @@ def main():
         # generate models from JSON
         node_labels = generate_models_from_workspace_json(args.import_model)
         generate_crud_endpoints(node_labels)
-
-    # Additional logic as needed
 
 
 if __name__ == "__main__":
