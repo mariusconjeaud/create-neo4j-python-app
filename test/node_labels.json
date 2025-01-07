@@ -1,0 +1,67 @@
+[
+    {
+        "$id": "nl:1",
+        "token": "FirstLabel",
+        "properties": [
+            {
+                "$id": "p:1",
+                "token": "uid",
+                "type": {
+                    "type": "string"
+                },
+                "nullable": true
+            },
+            {
+                "$id": "p:2",
+                "token": "someNumber",
+                "type": {
+                    "type": "integer"
+                },
+                "nullable": true
+            },
+            {
+                "$id": "p:3",
+                "token": "someFloat",
+                "type": {
+                    "type": "float"
+                },
+                "nullable": true
+            },
+            {
+                "$id": "p:4",
+                "token": "aBool",
+                "type": {
+                    "type": "boolean"
+                },
+                "nullable": true
+            },
+            {
+                "$id": "p:5",
+                "token": "dob",
+                "type": {
+                    "type": "datetime"
+                },
+                "nullable": true
+            }
+        ]
+    },
+    {
+        "$id": "nl:2",
+        "token": "SecondLabel",
+        "properties": []
+    },
+    {
+        "$id": "nl:3",
+        "token": "NodeWithNoRelation",
+        "properties": [
+            {
+                "$id": "p:7",
+                "token": "someId",
+                "type": {
+                    "type": "string"
+                },
+                "nullable": true
+            }
+        ]
+    }
+]
