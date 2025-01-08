@@ -237,6 +237,7 @@ def create_folder_structure() -> None:
     Returns:
         None
     """
+    global INSTANCE_URI
     os.makedirs(ROOT_DIRECTORY, exist_ok=True)
     os.makedirs(MODELS_DIRECTORY, exist_ok=True)
     os.makedirs(ROUTERS_DIRECTORY, exist_ok=True)
@@ -267,13 +268,14 @@ config.DATABASE_URL = os.getenv("NEO4J_URI")
         f.write("venv\n__pycache__\n*.pyc\n*.pyo\n*.pyd\n*.log\n.DS_Store\n.env\n")
     # Create secret .env and .env.example
     with open(".env", "w", encoding="utf-8") as f:
-        f.write(
-            f"NEO4J_URI={INSTANCE_URI}\nNEO4J_USERNAME={INSTANCE_USERNAME}\nNEO4J_PASSWORD={INSTANCE_PASSWORD}\n"
-        )
+        if INSTANCE_URI is None:
+            INSTANCE_URI = "<protocol>://<hostname>:<port>"
+        protocol = INSTANCE_URI.split("://", maxsplit=1)[0]
+        uri = INSTANCE_URI.split("://", maxsplit=1)[1]
+        neomodel_uri = f"{protocol}://{INSTANCE_USERNAME}:{INSTANCE_PASSWORD}@{uri}"
+        f.write(f"NEO4J_URI={neomodel_uri}")
     with open(".env.example", "w", encoding="utf-8") as f:
-        f.write(
-            "NEO4J_URI=<your-neo4j-uri>\nNEO4J_USERNAME=<your-neo4j-username>\nNEO4J_PASSWORD=<your-neo4j-password>\n"
-        )
+        f.write("NEO4J_URI=<protocol>://<username>:<password>@<hostname>:<port>")
 
     # create models structure
     with open(f"{MODELS_DIRECTORY}/__init__.py", "w", encoding="utf-8") as f:

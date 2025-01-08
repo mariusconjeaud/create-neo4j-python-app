@@ -141,19 +141,27 @@ def test_create_folder_structure(mock_file, mock_makedirs):
     # main.py
     assert any("app/main.py" in call[0] for call in mock_file.call_args_list)
     assert any(
-        call[0][0].startswith("        from fastapi import FastAPI\n")
-        for call in all_writes
+        call[0][0].startswith("from fastapi import FastAPI\n") for call in all_writes
     )
     assert any(
-        call[0][0].endswith("# Include routers dynamically later\n        ")
+        call[0][0].endswith("# Include routers dynamically later\n")
         for call in all_writes
     )
     # .gitignore
     assert any(".gitignore" in call[0] for call in mock_file.call_args_list)
     # .env
     assert any(".env" in call[0] for call in mock_file.call_args_list)
+    # If INSTANCE_ID is None (isolated test), it will fallback to case 1
+    # If it is test (from previous test), it will be in (nominal) case 2
     assert any(
-        call[0][0].startswith("NEO4J_URI=") and not call[0][0].startswith("NEO4J_URI=<")
+        (
+            call[0][0].startswith("NEO4J_URI=<protocol>://")
+            and not call[0][0].startswith("NEO4J_URI=<protocol>://<")
+        )
+        or (
+            call[0][0].startswith("NEO4J_URI=")
+            and not call[0][0].startswith("NEO4J_URI=<")
+        )
         for call in all_writes
     )
     # .env.example
@@ -189,7 +197,9 @@ def test_generate_models_from_workspace_json():
 
         # Check if files were opened and written to and validate content
         # models.py
-        assert any("models.py" in call[0] for call in mock_file.call_args_list)
+        assert any(
+            "app/models/models.py" in call[0] for call in mock_file.call_args_list
+        )
         assert mock_file().write.call_args_list[0][0][0] == expected_models_py
 
 

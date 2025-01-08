@@ -19,6 +19,7 @@ dependencies = [
 [project.optional-dependencies]
 dev = [
     "pytest",
+    "pytest-cov",
     "pytest-mock",
     "requests-mock",
     "pre-commit",
