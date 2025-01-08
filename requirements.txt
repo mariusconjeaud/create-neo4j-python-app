@@ -1,6 +1,2 @@
-fastapi
-uvicorn[standard]
-neomodel
 requests
-python-dotenv
 inflect

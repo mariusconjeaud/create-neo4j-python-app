@@ -166,7 +166,7 @@ def test_generate_crud_endpoints():
             call[0][0].startswith(
                 """
                 from fastapi import APIRouter, HTTPException\n
-                from models import FirstLabel\n
+                from app.models.models import FirstLabel\n
                 from neomodel import db\n
                 \n
                 router = APIRouter(prefix='/first_labels', tags=['FirstLabel'])

@@ -51,6 +51,29 @@ pip install create-neo4j-python-app
   - Go to the [Aura Workspace](https://workspace.neo4j.io/workspace/import)
   - Once your model is drawn in `Graph Models`, download the model as JSON.
 
+## Run your new application
+
+Once you have completed all the scaffolding steps, you can install requirements and run your API like this :
+
+   ```bash
+   # Ideally, create a virtual environment with :
+   python3 -m venv venv
+   source venv/bin/activate
+
+   # Install requirements :
+   pip install -r requirements.txt
+   uvicorn --host=0.0.0.0 --port=8000 app.main:app --reload
+   ```
+
+Finally, navigate to http://localhost:8000/docs and you should see the Swagger documentation for your brand new API !
+
+## Cleanup
+
+You can delete the Aura instance by running the script like this :
+
+   ```bash
+   create-neo4j-python-app -i YOUR_API_CLIENT_ID -s YOUR_API_CLIENT_SECRET -n my-instance -D
+   ```
 
 ## License
 

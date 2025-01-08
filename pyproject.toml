@@ -12,11 +12,7 @@ readme = "README.md"
 keywords = ["graph", "neo4j", "OGM", "FastAPI"]
 license = {text = "MIT"}
 dependencies = [
-  "fastapi",
-  "uvicorn[standard]",
-  "neomodel",
   "requests",
-  "python-dotenv",
   "inflect"
 ]
 

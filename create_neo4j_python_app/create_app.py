@@ -28,6 +28,8 @@ MODELS_DIRECTORY = f"{ROOT_DIRECTORY}/models"
 MODELS_FILE = f"{MODELS_DIRECTORY}/models.py"
 ROUTERS_DIRECTORY = f"{ROOT_DIRECTORY}/routers"
 
+BASE_AURA_URL = "https://api.neo4j.io/v1"
+
 # Used to pluralize node names for the routers
 p = inflect.engine()
 
@@ -74,6 +76,34 @@ def get_oauth_token(client_id: str, client_secret: str) -> None:
         print(response.text)
 
 
+def set_tenant_id() -> None:
+    """
+    Retrieves the tenant ID from the Neo4j Aura service.
+
+    This function makes a GET request to the Neo4j Aura service to retrieve the tenant ID
+    for the authenticated user. It stores the tenant ID in a global variable TENANT_ID.
+
+    Returns:
+        None
+
+    Side Effects:
+        - Sets global TENANT_ID variable when the tenant ID is successfully retrieved
+        - Prints success/error messages to standard output
+    """
+    global TENANT_ID
+    url = f"{BASE_AURA_URL}/tenants"
+    headers = {"Accept": "application/json", "Authorization": f"Bearer {ACCESS_TOKEN}"}
+
+    response = requests.get(url, headers=headers, timeout=10)
+
+    if response.status_code == 200:
+        TENANT_ID = response.json()["data"][0]["id"]
+        print("Successfully retrieved tenant ID")
+    else:
+        print(f"Error: {response.status_code}")
+        print(response.text)
+
+
 def create_neo4j_aura_instance(client_id: str, client_secret: str) -> None:
     """Create a Neo4j Aura instance using the Neo4j Aura API.
 
@@ -113,14 +143,11 @@ def create_neo4j_aura_instance(client_id: str, client_secret: str) -> None:
     # First, get authorization token
     get_oauth_token(client_id, client_secret)
 
-    base_url = "https://api.neo4j.io/v1"
-    headers = {"Accept": "application/json", "Authorization": f"Bearer {ACCESS_TOKEN}"}
-
-    # Get tenant ID
-    tenant_response = requests.get(f"{base_url}/tenants", headers=headers, timeout=10)
-    TENANT_ID = tenant_response.json()["data"][0]["id"]
+    set_tenant_id()
 
     # Create instance
+    headers = {"Accept": "application/json", "Authorization": f"Bearer {ACCESS_TOKEN}"}
+
     payload = {
         "name": INSTANCE_NAME,
         "type": "free-db",
@@ -132,7 +159,7 @@ def create_neo4j_aura_instance(client_id: str, client_secret: str) -> None:
     }
 
     response = requests.post(
-        f"{base_url}/instances", json=payload, headers=headers, timeout=60
+        f"{BASE_AURA_URL}/instances", json=payload, headers=headers, timeout=60
     )
 
     if response.status_code == 202:
@@ -166,7 +193,7 @@ def wait_for_instance_ready() -> None:
     Returns:
         None
     """
-    url = f"https://api.neo4j.io/v1/instances/{INSTANCE_ID}"
+    url = f"{BASE_AURA_URL}/instances/{INSTANCE_ID}"
     headers = {"Accept": "application/json", "Authorization": f"Bearer {ACCESS_TOKEN}"}
 
     iterations = 0
@@ -218,20 +245,20 @@ def create_folder_structure() -> None:
 
     # Create main.py
     main_content = """\
-        from fastapi import FastAPI
-        from neomodel import config
-        import os
-        from dotenv import load_dotenv
-        from routers import *
+from fastapi import FastAPI
+from neomodel import config
+import os
+from dotenv import load_dotenv
+from app import routers
 
-        load_dotenv()
+load_dotenv()
 
-        app = FastAPI()
+app = FastAPI()
 
-        config.DATABASE_URL = os.getenv("NEO4J_URI")
+config.DATABASE_URL = os.getenv("NEO4J_URI")
 
-        # Include routers dynamically later
-        """
+# Include routers dynamically later
+"""
     with open(MAIN_FILE, "w", encoding="utf-8") as f:
         f.write(main_content)
 
@@ -512,7 +539,7 @@ def generate_models_from_workspace_json(model_path: str) -> list[dict[str, Any]]
         model_code.append("        return props")
         model_code.append("")
 
-    with open("models.py", "w", encoding="utf-8") as f:
+    with open(MODELS_FILE, "a", encoding="utf-8") as f:
         f.write("\n".join(model_code))
 
     print("Successfully generated models from JSON")
@@ -565,7 +592,7 @@ def generate_crud_endpoints(node_labels: list[dict[str, Any]]) -> None:
 
         router_code = [
             "from fastapi import APIRouter, HTTPException",
-            "from models import " + class_name,
+            "from app.models.models import " + class_name,
             "from neomodel import db",
             "",
             f"router = APIRouter(prefix='/{plural}', tags=['{class_name}'])",
@@ -613,15 +640,74 @@ def generate_crud_endpoints(node_labels: list[dict[str, Any]]) -> None:
         with open(filename, "w", encoding="utf-8") as f:
             f.write("\n".join(router_code))
 
+    print("Successfully generated routers for your models.")
+    print(f"Routers are saved in {ROUTERS_DIRECTORY}")
+
     with open(f"{ROUTERS_DIRECTORY}/__init__.py", "w", encoding="utf-8") as f:
         for router_name in routers:
             f.write(
-                f"from routers.{router_name} import router as {router_name}_router\n"
+                f"from app.routers.{router_name} import router as {router_name}_router\n"
             )
 
-    with open(MAIN_FILE, "w", encoding="utf-8") as f:
+    with open(MAIN_FILE, "a", encoding="utf-8") as f:
         for router_name in routers:
             f.write(f"app.include_router(routers.{router_name}_router)\n")
+
+    print("Routers have been included in the main application file in app/main.py.")
+
+
+def delete_instance(client_id: str, client_secret: str, instance_name: str) -> None:
+    """Delete a Neo4j Aura instance using the Neo4j Aura API.
+
+    This function handles the deletion of a Neo4j Aura instance by making API calls to Neo4j's
+    Aura service. It deletes the specified database instance using the instance ID.
+
+    Args:
+        client_id (str): The OAuth client ID for authentication with Neo4j Aura API
+        client_secret (str): The OAuth client secret for authentication with Neo4j Aura API
+        instance_name (str): The name of the database instance to delete
+
+    Returns:
+        None
+
+    Notes:
+        - Instance deletion may take several minutes to complete
+    """
+    global ACCESS_TOKEN
+    global INSTANCE_ID
+    global INSTANCE_NAME
+
+    # First, get authorization token
+    get_oauth_token(client_id, client_secret)
+
+    headers = {"Accept": "application/json", "Authorization": f"Bearer {ACCESS_TOKEN}"}
+
+    # Get tenant ID
+    set_tenant_id()
+
+    # Get instance ID
+    instance_response = requests.get(
+        f"{BASE_AURA_URL}/instances?tenantId={TENANT_ID}", headers=headers, timeout=10
+    )
+    instances = instance_response.json()["data"]
+    for instance in instances:
+        if instance["name"] == instance_name:
+            INSTANCE_ID = instance["id"]
+            break
+
+    if INSTANCE_ID is None:
+        print(f"Instance with name {instance_name} not found.")
+        return
+
+    # Delete instance
+    response = requests.delete(
+        f"{BASE_AURA_URL}/instances/{INSTANCE_ID}", headers=headers, timeout=60
+    )
+
+    if response.status_code == 202:
+        print(f"Instance {instance_name} with ID {INSTANCE_ID} is being deleted.")
+    else:
+        print("Failed to delete instance:", response.text)
 
 
 def main():
@@ -667,10 +753,28 @@ def main():
     parser.add_argument(
         "-m", "--import-model", required=False, help="Path to model.json"
     )
+    parser.add_argument(
+        "-D",
+        "--delete-instance",
+        action="store_true",
+        help="Delete the Aura instance. Requires --instance-name, --api-client-id, --api-client-secret",
+    )
 
     args = parser.parse_args()
 
-    if args.api_client_id and args.api_client_secret:
+    if args.delete_instance:
+        if (
+            not args.instance_name
+            or not args.api_client_id
+            or not args.api_client_secret
+        ):
+            print(
+                "Please provide the instance's name, as well as your API client id and secret."
+            )
+            return
+        delete_instance(args.api_client_id, args.api_client_secret, args.instance_name)
+
+    elif args.api_client_id and args.api_client_secret:
         # create aura instance, scaffold directories, etc.
         INSTANCE_NAME = args.instance_name or "my-instance"
         create_neo4j_aura_instance(
@@ -689,7 +793,7 @@ def main():
         print("After importing your model, download it as JSON and save it locally.")
         print("Then run: create-neo4j-python-app --import-model path/to/model.json")
 
-    if args.import_model:
+    elif args.import_model:
         # generate models from JSON
         node_labels = generate_models_from_workspace_json(args.import_model)
         generate_crud_endpoints(node_labels)
