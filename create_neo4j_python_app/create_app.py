@@ -656,7 +656,9 @@ def generate_crud_endpoints(node_labels: list[dict[str, Any]]) -> None:
     print("Routers have been included in the main application file in app/main.py.")
 
 
-def delete_instance(client_id: str, client_secret: str, instance_name: str) -> None:
+def delete_neo4j_aura_instance(
+    client_id: str, client_secret: str, instance_name: str
+) -> None:
     """Delete a Neo4j Aura instance using the Neo4j Aura API.
 
     This function handles the deletion of a Neo4j Aura instance by making API calls to Neo4j's
@@ -706,6 +708,7 @@ def delete_instance(client_id: str, client_secret: str, instance_name: str) -> N
 
     if response.status_code == 202:
         print(f"Instance {instance_name} with ID {INSTANCE_ID} is being deleted.")
+        INSTANCE_ID = None
     else:
         print("Failed to delete instance:", response.text)
 
@@ -772,7 +775,9 @@ def main():
                 "Please provide the instance's name, as well as your API client id and secret."
             )
             return
-        delete_instance(args.api_client_id, args.api_client_secret, args.instance_name)
+        delete_neo4j_aura_instance(
+            args.api_client_id, args.api_client_secret, args.instance_name
+        )
 
     elif args.api_client_id and args.api_client_secret:
         # create aura instance, scaffold directories, etc.

@@ -10,6 +10,7 @@ import pytest
 from create_neo4j_python_app.create_app import (
     create_folder_structure,
     create_neo4j_aura_instance,
+    delete_neo4j_aura_instance,
     generate_crud_endpoints,
     generate_models_from_workspace_json,
     get_oauth_token,
@@ -75,6 +76,50 @@ def test_create_neo4j_aura_instance(requests_mock):
     assert INSTANCE_USERNAME == "neo4j"
     assert INSTANCE_PASSWORD == "test_password"
     assert INSTANCE_ID == "instance-id-123"
+
+
+@pytest.mark.usefixtures("requests_mock")
+def test_delete_neo4j_aura_instance(requests_mock):
+    """Test delete_neo4j_aura_instance function with successful response."""
+    requests_mock.post(
+        "https://api.neo4j.io/oauth/token",
+        json={"access_token": "test_token"},
+        status_code=200,
+    )
+    requests_mock.get(
+        "https://api.neo4j.io/v1/tenants",
+        json={"data": [{"id": "tenant-id-123"}]},
+        status_code=200,
+    )
+    requests_mock.get(
+        "https://api.neo4j.io/v1/instances?tenantId=tenant-id-123",
+        json={"data": [{"id": "instance-id-123", "name": "instance-name"}]},
+        status_code=200,
+    )
+    requests_mock.post(
+        "https://api.neo4j.io/v1/instances",
+        json={
+            "data": {
+                "connection_url": "bolt://localhost:7687",
+                "username": "neo4j",
+                "password": "test_password",
+                "id": "instance-id-123",
+            }
+        },
+        status_code=202,
+    )
+    requests_mock.delete(
+        "https://api.neo4j.io/v1/instances/instance-id-123",
+        status_code=202,
+    )
+
+    create_neo4j_aura_instance("client_id", "client_secret")
+    # Execute instance deletion
+    delete_neo4j_aura_instance("client_id", "client_secret", "instance-name")
+
+    from create_neo4j_python_app.create_app import INSTANCE_ID
+
+    assert INSTANCE_ID is None
 
 
 @patch("os.makedirs")
