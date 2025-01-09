@@ -536,7 +536,7 @@ def generate_models_from_workspace_json(model_path: str) -> list[dict[str, Any]]
         model_code.append("")
         model_code.append("    def to_dict(self):")
         model_code.append("        props = {}")
-        model_code.append("        for prop_name in self.__all_properties__:")
+        model_code.append("        for prop_name, _ in self.__all_properties__:")
         model_code.append("            props[prop_name] = getattr(self, prop_name)")
         model_code.append("        return props")
         model_code.append("")
@@ -593,9 +593,10 @@ def generate_crud_endpoints(node_labels: list[dict[str, Any]]) -> None:
         routers.append(underscored)
 
         router_code = [
+            f'"""{class_name} router."""\n',
+            "",
             "from fastapi import APIRouter, HTTPException",
             "from app.models.models import " + class_name,
-            "from neomodel import db",
             "",
             f"router = APIRouter(prefix='/{plural}', tags=['{class_name}'])",
             "",
