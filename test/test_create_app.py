@@ -220,9 +220,10 @@ def test_generate_crud_endpoints():
         any(
             call[0][0].startswith(
                 """
+                \"\"\"FirstLabel router.\"\"\"\n
+                \n
                 from fastapi import APIRouter, HTTPException\n
                 from app.models.models import FirstLabel\n
-                from neomodel import db\n
                 \n
                 router = APIRouter(prefix='/first_labels', tags=['FirstLabel'])
                 """

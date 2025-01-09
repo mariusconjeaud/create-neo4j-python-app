@@ -16,7 +16,7 @@ class FirstLabel(StructuredNode):
 
     def to_dict(self):
         props = {}
-        for prop_name in self.__all_properties__:
+        for prop_name, _ in self.__all_properties__:
             props[prop_name] = getattr(self, prop_name)
         return props
 
@@ -26,7 +26,7 @@ class SecondLabel(StructuredNode):
 
     def to_dict(self):
         props = {}
-        for prop_name in self.__all_properties__:
+        for prop_name, _ in self.__all_properties__:
             props[prop_name] = getattr(self, prop_name)
         return props
 
@@ -35,6 +35,6 @@ class NodeWithNoRelation(StructuredNode):
 
     def to_dict(self):
         props = {}
-        for prop_name in self.__all_properties__:
+        for prop_name, _ in self.__all_properties__:
             props[prop_name] = getattr(self, prop_name)
         return props
